@@ -8,7 +8,7 @@ async function pdf(url) {
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: "networkidle0" });
   const pdf = await page.pdf({
-    format: "letter",
+    format: "A4",
     printBackground: true,
   });
   await browser.close();
