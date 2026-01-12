@@ -1,6 +1,6 @@
 ---
 chapter: 3
-title: How to Run a Program
+title: 프로그램 실행 방법
 shortname: Exec
 slug: how-to-run-a-program
 updatedAt: 2023-07-24T15:57:08.044Z
@@ -8,28 +8,28 @@ updatedAt: 2023-07-24T15:57:08.044Z
 
 import CodeBlock from '../../components/CodeBlock.astro'
 
-So far, we've covered how CPUs execute machine code loaded from executables, what ring-based security is, and how syscalls work. In this section, we'll dive deep into the Linux kernel to figure out how programs are loaded and run in the first place.
+지금까지 우리는 CPU가 실행 파일에서 로드된 기계어를 어떻게 실행하는지, 링 기반 보안이 무엇인지, 시스템 콜이 어떻게 작동하는지를 다뤘습니다. 이번 섹션에서는 Linux 커널을 깊이 파고들어 프로그램이 처음부터 어떻게 로드되고 실행되는지 알아보겠습니다.
 
-We're specifically going to look at Linux on x86-64. Why?
+특별히 x86-64에서의 Linux를 살펴볼 것입니다. 왜일까요?
 
-- Linux is a fully featured production OS for desktop, mobile, and server use cases. Linux is open source, so it's super easy to research just by reading its source code. I will be directly referencing some kernel code in this article!
-- x86-64 is the architecture that most modern desktop computers use, and the target architecture of a lot of code. The subset of behavior I mention that is x86-64-specific will generalize well.
+- Linux는 데스크톱, 모바일, 서버 사용 사례를 위한 완전한 기능을 갖춘 프로덕션 OS입니다. Linux는 오픈 소스이므로 소스 코드를 읽기만 하면 연구하기가 매우 쉽습니다. 이 글에서 커널 코드를 직접 참조할 것입니다!
+- x86-64는 대부분의 현대 데스크톱 컴퓨터가 사용하는 아키텍처이며, 많은 코드의 타겟 아키텍처입니다. 제가 언급하는 x86-64 특정 동작의 하위 집합은 잘 일반화될 것입니다.
 
-Most of what we learn will generalize well to other operating systems and architectures, even if they differ in various specific ways.
+우리가 배울 대부분의 내용은 비록 다양한 특정 방식에서 차이가 있더라도 다른 운영 체제와 아키텍처에 잘 일반화될 것입니다.
 
-## Basic Behavior of Exec Syscalls
+## Exec 시스템 콜의 기본 동작
 
-<img src='/images/linux-program-execution-process.png' loading='eager' style='max-width: 600px; margin: 0 auto;' alt='A flowchart demonstrating exec syscalls. On the left, a group of flowchart items labeled "user space," on the right, a group labeled "kernel space." Starting in the user space group: the user runs ./file.bin in their terminal, which then runs the syscall execve("./file.bin", ...). This flows to the SYSCALL instruction being executed, which then points to the first item in the kernel space group: "Load and set up a binary" which points to "Try a binfmt." If the binfmt is supported, it starts the new process (replacing the current). If not, it tries the binfmt again.' width='917' height='424' />
+<img src='/images/linux-program-execution-process.png' loading='eager' style='max-width: 600px; margin: 0 auto;' alt='exec 시스템 콜을 보여주는 순서도. 왼쪽에는 "사용자 공간"으로 레이블된 순서도 항목 그룹이 있고, 오른쪽에는 "커널 공간"으로 레이블된 그룹이 있습니다. 사용자 공간 그룹에서 시작: 사용자가 터미널에서 ./file.bin을 실행하면 execve("./file.bin", ...)를 실행합니다. 이것은 SYSCALL 명령어가 실행되는 것으로 흐르고, 그 다음 커널 공간 그룹의 첫 번째 항목을 가리킵니다: "바이너리 로드 및 설정"은 "binfmt 시도"를 가리킵니다. binfmt가 지원되면 새 프로세스를 시작합니다(현재 프로세스를 대체). 그렇지 않으면 binfmt를 다시 시도합니다.' width='917' height='424' />
 
-Let's start with a very important system call: `execve`. It loads a program and, if successful, replaces the current process with that program. A couple other syscalls (`execlp`, `execvpe`, etc.) exist, but they all layer on top of `execve` in various fashions.
+매우 중요한 시스템 콜인 `execve`부터 시작하겠습니다. 이것은 프로그램을 로드하고, 성공하면 현재 프로세스를 해당 프로그램으로 교체합니다. 몇 가지 다른 시스템 콜(`execlp`, `execvpe` 등)이 존재하지만, 모두 다양한 방식으로 `execve` 위에 계층화되어 있습니다.
 
-> **Aside: `execveat`**
-> 
-> `execve` is *actually* built on top of `execveat`, a more general syscall that runs a program with some configuration options. For simplicity, we'll mostly talk about `execve`; the only difference is that it provides some defaults to `execveat`.
+> **참고: `execveat`**
 >
-> Curious what `ve` stands for? The `v` means one parameter is the vector (list) of arguments (`argv`), and the `e` means another parameter is the vector of environment variables (`envp`). Various other exec syscalls have different suffixes to designate different call signatures. The `at` in `execveat` is just "at", because it specifies the location to run `execve` at.
+> `execve`는 *실제로는* `execveat` 위에 구축되어 있습니다. `execveat`은 일부 구성 옵션과 함께 프로그램을 실행하는 보다 일반적인 시스템 콜입니다. 간단함을 위해 대부분 `execve`에 대해 이야기하겠습니다; 유일한 차이점은 `execveat`에 몇 가지 기본값을 제공한다는 것입니다.
+>
+> `ve`가 무엇을 의미하는지 궁금하신가요? `v`는 한 매개변수가 인수의 벡터(목록)(`argv`)임을 의미하고, `e`는 다른 매개변수가 환경 변수의 벡터(`envp`)임을 의미합니다. 다른 다양한 exec 시스템 콜은 다른 호출 서명을 지정하기 위해 다른 접미사를 갖습니다. `execveat`의 `at`은 단지 "at"이며, `execve`를 실행할 위치를 지정하기 때문입니다.
 
-The call signature of `execve` is:
+`execve`의 호출 서명은 다음과 같습니다:
 
 <CodeBlock>
 ```c
@@ -37,17 +37,17 @@ int execve(const char *filename, char *const argv[], char *const envp[]);
 ```
 </CodeBlock>
 
-- The `filename` argument specifies a path to the program to run.
-- `argv` is a null-terminated (meaning the last item is a null pointer) list of arguments to the program. The `argc` argument you'll commonly see passed to C main functions is actually calculated later by the syscall, thus the null-termination.
-- The `envp` argument contains another null-terminated list of environment variables used as context for the application. They're... conventionally `KEY=VALUE` pairs. *Conventionally.* I love computers.
+- `filename` 인수는 실행할 프로그램의 경로를 지정합니다.
+- `argv`는 프로그램에 대한 인수의 널 종료(마지막 항목이 널 포인터임을 의미) 목록입니다. C main 함수에 전달되는 것을 흔히 볼 수 있는 `argc` 인수는 실제로 나중에 시스템 콜에 의해 계산되므로 널 종료가 필요합니다.
+- `envp` 인수는 애플리케이션의 컨텍스트로 사용되는 환경 변수의 또 다른 널 종료 목록을 포함합니다. 그것들은... 관례적으로 `KEY=VALUE` 쌍입니다. *관례적으로.* 컴퓨터가 좋아요.
 
-Fun fact! You know that convention where a program's first argument is the name of the program? That's *purely a convention*, and isn't actually set by the `execve` syscall itself! The first argument will be whatever is passed to `execve` as the first item in the `argv` argument, even if it has nothing to do with the program name.
+재미있는 사실! 프로그램의 첫 번째 인수가 프로그램의 이름이라는 그 관례를 아시나요? 그것은 *순전히 관례*이며, 실제로 `execve` 시스템 콜 자체에 의해 설정되지 않습니다! 첫 번째 인수는 `argv` 인수의 첫 번째 항목으로 `execve`에 전달되는 모든 것이 될 것이며, 프로그램 이름과 아무 관련이 없더라도 마찬가지입니다.
 
-Interestingly, `execve` does have some code that assumes `argv[0]` is the program name. More on this later when we talk about interpreted scripting languages.
+흥미롭게도, `execve`는 `argv[0]`이 프로그램 이름이라고 가정하는 일부 코드를 가지고 있습니다. 해석된 스크립팅 언어에 대해 이야기할 때 이에 대해 더 자세히 설명하겠습니다.
 
-### Step 0: Definition
+### 단계 0: 정의
 
-We already know how syscalls work, but we've never seen a real-world code example! Let's look at the Linux kernel's source code to see how `execve` is defined under the hood:
+우리는 이미 시스템 콜이 어떻게 작동하는지 알고 있지만, 실제 코드 예제는 본 적이 없습니다! Linux 커널의 소스 코드를 살펴보고 `execve`가 내부적으로 어떻게 정의되는지 봅시다:
 
 <CodeBlock name='fs/exec.c' startLine={2105} sourceUrl='https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/fs/exec.c#L2105-L2111'>
 ```c
@@ -61,11 +61,11 @@ SYSCALL_DEFINE3(execve,
 ```
 </CodeBlock>
 
-`SYSCALL_DEFINE3` is a macro for defining a 3-argument system call's code.
+`SYSCALL_DEFINE3`는 3개 인수 시스템 콜의 코드를 정의하기 위한 매크로입니다.
 
-> I was curious why the [arity](https://en.wikipedia.org/wiki/Arity) is hardcoded in the macro name; I googled around and learned that this was a workaround to fix [some security vulnerability](https://nvd.nist.gov/vuln/detail/CVE-2009-0029).
+> 저는 왜 [arity](https://en.wikipedia.org/wiki/Arity)가 매크로 이름에 하드코딩되어 있는지 궁금했습니다; 검색해 보니 이것이 [일부 보안 취약점](https://nvd.nist.gov/vuln/detail/CVE-2009-0029)을 수정하기 위한 해결 방법이었다는 것을 알게 되었습니다.
 
-The filename argument is passed to a `getname()` function, which copies the string from user space to kernel space and does some usage tracking things. It returns a `filename` struct, which is defined in `include/linux/fs.h`. It stores a pointer to the original string in user space as well as a new pointer to the value copied to kernel space:
+filename 인수는 `getname()` 함수에 전달되며, 이 함수는 사용자 공간에서 커널 공간으로 문자열을 복사하고 일부 사용량 추적 작업을 수행합니다. `include/linux/fs.h`에 정의된 `filename` 구조체를 반환합니다. 이것은 사용자 공간의 원래 문자열에 대한 포인터와 커널 공간에 복사된 값에 대한 새 포인터를 저장합니다:
 
 <CodeBlock name='include/linux/fs.h' startLine={2294} sourceUrl='https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/include/linux/fs.h#L2294-L2300'>
 ```c
@@ -79,9 +79,9 @@ struct filename {
 ```
 </CodeBlock>
 
-The `execve` system call then calls a `do_execve()` function. This, in turn, calls `do_execveat_common()`with some defaults. The `execveat` syscall which I mentioned earlier also calls `do_execveat_common()`, but passes through more user-provided options.
+그런 다음 `execve` 시스템 콜은 `do_execve()` 함수를 호출합니다. 이것은 차례로 일부 기본값과 함께 `do_execveat_common()`을 호출합니다. 앞서 언급한 `execveat` 시스템 콜도 `do_execveat_common()`을 호출하지만, 더 많은 사용자 제공 옵션을 전달합니다.
 
-In the below snippet, I've included the definitions of both `do_execve` and `do_execveat`:
+아래 스니펫에서, 나는 `do_execve`와 `do_execveat`의 정의를 모두 포함했습니다:
 
 <CodeBlock name='fs/exec.c' startLine={2028} sourceUrl='https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/fs/exec.c#L2028-L2046'>
 ```c
@@ -109,24 +109,24 @@ static int do_execveat(int fd, struct filename *filename,
 
 \[spacing sic\]
 
-In `execveat`, a file descriptor (a type of id that points to *some resource*) is passed to the syscall and then to `do_execveat_common`. This specifies the directory to execute the program relative to.
+`execveat`에서, 파일 디스크립터(*어떤 리소스*를 가리키는 일종의 id)가 시스템 콜에 전달된 다음 `do_execveat_common`에 전달됩니다. 이것은 프로그램을 실행할 디렉토리를 상대적으로 지정합니다.
 
-In `execve`, a special value is used for the file descriptor argument, `AT_FDCWD`. This is a shared constant in the Linux kernel that tells functions to interpret pathnames as relative to the current working directory. Functions that accept file descriptors usually include a manual check like <code>if&nbsp;(fd&nbsp;==&nbsp;AT_FDCWD) \{&nbsp;/\*&nbsp;special codepath&nbsp;\*/&nbsp;\}</code>.
+`execve`에서는 파일 디스크립터 인수에 특수 값인 `AT_FDCWD`가 사용됩니다. 이것은 Linux 커널의 공유 상수로, 함수에 경로 이름을 현재 작업 디렉토리에 상대적인 것으로 해석하도록 지시합니다. 파일 디스크립터를 허용하는 함수는 일반적으로 <code>if&nbsp;(fd&nbsp;==&nbsp;AT_FDCWD) \{&nbsp;/\*&nbsp;special codepath&nbsp;\*/&nbsp;\}</code>와 같은 수동 검사를 포함합니다.
 
-### Step 1: Setup
+### 단계 1: 설정
 
-We've now reached `do_execveat_common`, the core function handling program execution. We're going to take a brief step back from staring at code to get a bigger picture view of what this function does.
+우리는 이제 프로그램 실행을 처리하는 핵심 함수인 `do_execveat_common`에 도달했습니다. 이 함수가 무엇을 하는지에 대한 더 큰 그림을 보기 위해 코드를 응시하는 것에서 잠깐 물러나겠습니다.
 
-The first major job of `do_execveat_common` is setting up a struct called `linux_binprm`. I won't include a copy of [the whole struct definition](https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/include/linux/binfmts.h#L15-L65), but there are several important fields to go over:
+`do_execveat_common`의 첫 번째 주요 작업은 `linux_binprm`이라는 구조체를 설정하는 것입니다. [전체 구조체 정의](https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/include/linux/binfmts.h#L15-L65)의 복사본을 포함하지는 않겠지만, 살펴볼 몇 가지 중요한 필드가 있습니다:
 
-- Data structures like `mm_struct` and `vm_area_struct` are defined to prepare virtual memory management for the new program.
-- `argc` and `envc` are calculated and stored to be passed to the program.
-- `filename` and `interp` store the filename of the program and its interpreter, respectively. These start out equal to each other, but can change in some cases: one such case is when running interpreted scripts with a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)). When executing a Python program, for example, `filename` points to the source file but `interp` is the path to the Python interpreter.
-- `buf` is an array filled with the first 256 bytes of the file to be executed. It's used to detect the format of the file and load script shebangs.
+- `mm_struct` 및 `vm_area_struct`와 같은 데이터 구조는 새 프로그램을 위한 가상 메모리 관리를 준비하기 위해 정의됩니다.
+- `argc`와 `envc`는 계산되어 프로그램에 전달되도록 저장됩니다.
+- `filename`과 `interp`는 각각 프로그램의 파일 이름과 인터프리터를 저장합니다. 이것들은 서로 같게 시작하지만 일부 경우에 변경될 수 있습니다: 그러한 경우 중 하나는 [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix))이 있는 해석된 스크립트를 실행할 때입니다. 예를 들어, Python 프로그램을 실행할 때 `filename`은 소스 파일을 가리키지만 `interp`는 Python 인터프리터의 경로입니다.
+- `buf`는 실행할 파일의 처음 256바이트로 채워진 배열입니다. 파일의 형식을 감지하고 스크립트 shebang을 로드하는 데 사용됩니다.
 
-(TIL: binprm stands for **bin**ary **pr**og**r**a**m**.)
+(TIL: binprm은 **bin**ary **pr**og**r**a**m**을 의미합니다.)
 
-Let's take a closer look at this buffer `buf`:
+이 버퍼 `buf`를 더 자세히 살펴봅시다:
 
 <CodeBlock name='linux_binprm @ include/linux/binfmts.h' startLine={64} sourceUrl='https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/include/linux/binfmts.h#L64'>
 ```c
@@ -134,7 +134,7 @@ Let's take a closer look at this buffer `buf`:
 ```
 </CodeBlock>
 
-As we can see, its length is defined as the constant `BINPRM_BUF_SIZE`. By searching the codebase for this string, we can find a definition for this in `include/uapi/linux/binfmts.h`:
+보시다시피, 그 길이는 상수 `BINPRM_BUF_SIZE`로 정의됩니다. 코드베이스에서 이 문자열을 검색하면, `include/uapi/linux/binfmts.h`에서 이에 대한 정의를 찾을 수 있습니다:
 
 <CodeBlock name='include/uapi/linux/binfmts.h' startLine={18} sourceUrl='https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/include/uapi/linux/binfmts.h#L18-L19'>
 ```c
@@ -143,31 +143,31 @@ As we can see, its length is defined as the constant `BINPRM_BUF_SIZE`. By searc
 ```
 </CodeBlock>
 
-So, the kernel loads the opening 256 bytes of the executed file into this memory buffer.
+따라서 커널은 실행된 파일의 처음 256바이트를 이 메모리 버퍼에 로드합니다.
 
-> **Aside: what's a UAPI?**
-> 
-> You might notice that the above code's path contains `/uapi/`. Why isn't the length defined in the same file as the `linux_binprm` struct, `include/linux/binfmts.h`?
+> **참고: UAPI가 뭔가요?**
 >
-> UAPI stands for "userspace API." In this case, it means someone decided that the length of the buffer should be part of the kernel's public API. In theory, everything UAPI is exposed to userland, and everything non-UAPI is private to kernel code.
+> 위 코드의 경로에 `/uapi/`가 포함되어 있음을 알 수 있습니다. 왜 길이가 `linux_binprm` 구조체와 같은 파일인 `include/linux/binfmts.h`에 정의되지 않았을까요?
 >
-> Kernel and user space code originally coexisted in one jumbled mass. In 2012, UAPI code was [refactored into a separate directory](https://lwn.net/Articles/507794/) as an attempt to improve maintainability.
+> UAPI는 "userspace API"를 의미합니다. 이 경우, 누군가가 버퍼의 길이가 커널의 공개 API의 일부여야 한다고 결정했음을 의미합니다. 이론적으로 모든 UAPI는 사용자 공간에 노출되고, 모든 비-UAPI는 커널 코드에 비공개입니다.
+>
+> 커널과 사용자 공간 코드는 원래 하나의 뒤죽박죽 덩어리로 공존했습니다. 2012년에 UAPI 코드는 유지 관리성을 개선하기 위한 시도로 [별도의 디렉토리로 리팩토링](https://lwn.net/Articles/507794/)되었습니다.
 
-### Step 2: Binfmts
+### 단계 2: Binfmts
 
-The kernel's next major job is iterating through a bunch of "binfmt" (binary format) handlers. These handlers are defined in files like `fs/binfmt_elf.c` and `fs/binfmt_flat.c`. [Kernel modules](https://wiki.archlinux.org/title/Kernel_module) can also add their own binfmt handlers to the pool.
+커널의 다음 주요 작업은 여러 "binfmt"(바이너리 형식) 핸들러를 반복하는 것입니다. 이러한 핸들러는 `fs/binfmt_elf.c` 및 `fs/binfmt_flat.c`와 같은 파일에 정의되어 있습니다. [커널 모듈](https://wiki.archlinux.org/title/Kernel_module)도 자체 binfmt 핸들러를 풀에 추가할 수 있습니다.
 
-Each handler exposes a `load_binary()` function which takes a `linux_binprm` struct and checks if the handler understands the program's format.
+각 핸들러는 `linux_binprm` 구조체를 받아 핸들러가 프로그램의 형식을 이해하는지 확인하는 `load_binary()` 함수를 노출합니다.
 
-This often involves looking for [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) in the buffer, attempting to decode the start of the program (also from the buffer), and/or checking the file extension. If the handler does support the format, it prepares the program for execution and returns a success code. Otherwise, it quits early and returns an error code.
+이것은 종종 버퍼에서 [매직 넘버](https://en.wikipedia.org/wiki/Magic_number_(programming))를 찾거나, (또한 버퍼에서) 프로그램의 시작을 디코딩하려고 시도하거나, 파일 확장자를 확인하는 것을 포함합니다. 핸들러가 형식을 지원하면 실행을 위해 프로그램을 준비하고 성공 코드를 반환합니다. 그렇지 않으면 일찍 종료하고 오류 코드를 반환합니다.
 
-The kernel tries the `load_binary()` function of each binfmt until it reaches one that succeeds. Sometimes these will run recursively; for example, if a script has an interpreter specified and that interpreter is, itself, a script, the hierarchy might be `binfmt_script` > `binfmt_script` > `binfmt_elf` (where ELF is the executable format at the end of the chain).
+커널은 성공하는 것에 도달할 때까지 각 binfmt의 `load_binary()` 함수를 시도합니다. 때때로 이것들은 재귀적으로 실행됩니다; 예를 들어, 스크립트에 인터프리터가 지정되어 있고 그 인터프리터가 그 자체로 스크립트인 경우, 계층 구조는 `binfmt_script` > `binfmt_script` > `binfmt_elf`일 수 있습니다 (여기서 ELF는 체인의 끝에 있는 실행 가능한 형식입니다).
 
-### Format Highlight: Scripts
+### 형식 하이라이트: 스크립트
 
-Of the many formats Linux supports, `binfmt_script` is the first I want to specifically talk about.
+Linux가 지원하는 많은 형식 중에서 `binfmt_script`는 제가 특별히 이야기하고 싶은 첫 번째 형식입니다.
 
-Have you ever read or written a [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix))? That line at the start of some scripts that specifies the path to the interpreter?
+[shebang](https://en.wikipedia.org/wiki/Shebang_(Unix))을 읽거나 쓴 적이 있나요? 인터프리터의 경로를 지정하는 일부 스크립트의 시작 부분에 있는 그 줄 말이죠?
 
 <CodeBlock startLine={1}>
 ```bash
@@ -175,9 +175,9 @@ Have you ever read or written a [shebang](https://en.wikipedia.org/wiki/Shebang_
 ```
 </CodeBlock>
 
-I always just assumed these were handled by the shell, but no! Shebangs are actually a feature of the kernel, and scripts are executed with the same syscalls as every other program. Computers are *so cool*.
+저는 항상 이것들이 셸에 의해 처리된다고 가정했지만, 아닙니다! Shebang은 실제로 커널의 기능이며, 스크립트는 다른 모든 프로그램과 동일한 시스템 콜로 실행됩니다. 컴퓨터는 *정말 멋집니다*.
 
-Take a look at how `fs/binfmt_script.c` checks if a file starts with a shebang:
+`fs/binfmt_script.c`가 파일이 shebang으로 시작하는지 어떻게 확인하는지 살펴보세요:
 
 <CodeBlock name='load_script @ fs/binfmt_script.c' startLine={40} sourceUrl='https://github.com/torvalds/linux/blob/22b8cc3e78f5448b4c5df00303817a9137cd663f/fs/binfmt_script.c#L40-L42'>
 ```c
@@ -187,36 +187,36 @@ Take a look at how `fs/binfmt_script.c` checks if a file starts with a shebang:
 ```
 </CodeBlock>
 
-If the file does start with a shebang, the binfmt handler then reads the interpreter path and any space-separated arguments after the path. It stops when it hits either a newline or the end of the buffer.
+파일이 shebang으로 시작하면, binfmt 핸들러는 인터프리터 경로와 경로 뒤의 공백으로 구분된 인수를 읽습니다. 개행 문자나 버퍼의 끝에 도달하면 멈춥니다.
 
-There are two interesting, wonky things going on here.
+여기에서 두 가지 흥미롭고 이상한 일이 일어나고 있습니다.
 
-**First of all**, remember that buffer in `linux_binprm` that was filled with the first 256 bytes of the file? That's used for executable format detection, but that same buffer is also what shebangs are read out of in `binfmt_script`.
+**첫째**, 파일의 처음 256바이트로 채워진 `linux_binprm`의 버퍼를 기억하시나요? 그것은 실행 가능한 형식 감지에 사용되지만, 그 동일한 버퍼는 또한 `binfmt_script`에서 shebang이 읽혀지는 곳입니다.
 
-During my research, I read an article that described the buffer as 128 bytes long. At some point after that article was published, the length was doubled to 256 bytes! Curious why, I checked the Git blame — a log of everybody who edited a certain line of code — for the line where `BINPRM_BUF_SIZE` is defined in the Linux source code. Lo and behold...
+제 연구 중에, 버퍼를 128바이트 길이로 설명한 글을 읽었습니다. 그 글이 게시된 후 어느 시점에, 길이가 256바이트로 두 배가 되었습니다! 왜인지 궁금해서, Linux 소스 코드에서 `BINPRM_BUF_SIZE`가 정의된 줄의 Git blame — 특정 코드 줄을 편집한 모든 사람의 로그 — 를 확인했습니다. 놀랍게도...
 
-<img src='/images/binprm-buf-changelog.png' loading='lazy' style='max-width: 550px;' alt='A screenshot of a Git blame window from the Visual Studio Code editor. The git blame shows the line "#define BINPRM_BUF_SIZE 128" being changed to 256. The commit is by Oleg Nesterov, and the main text is "exec: increase BINPRM_BUF_SIZE to 256. Large enterprise clients often run applications out of networked file systems where the IT mandated layout of project volumes can end up leading to paths that are longer than 128 characters.  Bumping this up to the next order of two solves this problem in all but the most egregious case while still fitting into a 512b slab." The commit is signed off by Linus Torvalds, among others.' width='942' height='968' />
+<img src='/images/binprm-buf-changelog.png' loading='lazy' style='max-width: 550px;' alt='Visual Studio Code 편집기의 Git blame 창 스크린샷. git blame은 "#define BINPRM_BUF_SIZE 128" 줄이 256으로 변경된 것을 보여줍니다. 커밋은 Oleg Nesterov에 의한 것이며, 주요 텍스트는 "exec: increase BINPRM_BUF_SIZE to 256. Large enterprise clients often run applications out of networked file systems where the IT mandated layout of project volumes can end up leading to paths that are longer than 128 characters.  Bumping this up to the next order of two solves this problem in all but the most egregious case while still fitting into a 512b slab."입니다. 커밋은 Linus Torvalds 등에 의해 서명되었습니다.' width='942' height='968' />
 
-COMPUTERS ARE SO COOL!
+컴퓨터는 정말 멋집니다!
 
-Since shebangs are handled by the kernel, and pull from `buf` instead of loading the whole file, they're *always* truncated to the length of `buf`. Apparently, 4 years ago, someone got annoyed by the kernel truncating their >128-character paths, and their solution was to double the truncation point by doubling the buffer size! Today, on your very own Linux machine, if you have a shebang line more than 256 characters long, everything past 256 characters will be *completely lost*.
+Shebang은 커널에 의해 처리되고, 전체 파일을 로드하는 대신 `buf`에서 가져오기 때문에, *항상* `buf`의 길이로 잘립니다. 분명히, 4년 전에 누군가가 커널이 >128자 경로를 자르는 것에 짜증이 났고, 그들의 해결책은 버퍼 크기를 두 배로 늘려 절단 지점을 두 배로 늘리는 것이었습니다! 오늘날, 여러분의 Linux 머신에서 256자보다 긴 shebang 줄이 있으면 256자를 넘는 모든 것이 *완전히 손실*됩니다.
 
-<img src='/images/linux-shebang-truncation.png' loading='lazy' style='max-width: 500px;' alt='A diagram depicting shebang truncation. A large array of bytes from a file named file.bin. The first 256 bytes are highlighted and labeled "Loaded into buf," while the remaining bytes are translucent and labeled "Ignored, past 256 bytes."' width='730' height='548' />
+<img src='/images/linux-shebang-truncation.png' loading='lazy' style='max-width: 500px;' alt='shebang 절단을 보여주는 다이어그램. file.bin이라는 파일의 대용량 바이트 배열. 처음 256바이트는 강조 표시되고 "buf에 로드됨"으로 레이블이 지정되며, 나머지 바이트는 반투명하고 "무시됨, 256바이트 이후"로 레이블이 지정됩니다.' width='730' height='548' />
 
-Imagine having a bug because of this. Imagine trying to figure out the root cause of what's breaking your code. Imagine how it would feel, discovering that the problem is deep within the Linux kernel. Woe to the next IT person at a massive enterprise who discovers that part of a path has mysteriously gone missing.
+이것 때문에 버그가 있다고 상상해보세요. 코드를 망가뜨리는 것의 근본 원인을 알아내려고 노력한다고 상상해보세요. 문제가 Linux 커널 깊숙한 곳에 있다는 것을 발견했을 때 어떤 기분일지 상상해보세요. 경로의 일부가 신비롭게 사라진 것을 발견하는 대규모 기업의 다음 IT 담당자에게 화가 있을 것입니다.
 
-**The second wonky thing:** remember how it's only *convention* for `argv[0]` to be the program name, how the caller can pass any `argv` they want to an exec syscall and it will pass through unmoderated?
+**두 번째 이상한 것:** `argv[0]`이 프로그램 이름이라는 것은 *관례*일 뿐이며, 호출자가 원하는 `argv`를 exec 시스템 콜에 전달할 수 있고 그것이 통제 없이 통과할 것이라는 것을 기억하시나요?
 
-It just so happens that `binfmt_script` is one of those places that *assumes* `argv[0]` is the program name. It always removes `argv[0]`, and then adds the following to the start of `argv`:
+`binfmt_script`가 `argv[0]`이 프로그램 이름이라고 *가정*하는 곳 중 하나라는 것이 우연히 발생합니다. 항상 `argv[0]`을 제거하고, 그런 다음 `argv`의 시작 부분에 다음을 추가합니다:
 
-- Path to the interpreter
-- Arguments to the interpreter
-- Filename of the script
+- 인터프리터로의 경로
+- 인터프리터에 대한 인수
+- 스크립트의 파일 이름
 
 <blockquote>
-**Example: Argument Modification**
+**예: 인수 수정**
 
-Let's look at a sample `execve` call:
+샘플 `execve` 호출을 살펴봅시다:
 
 <CodeBlock>
 ```c
@@ -225,7 +225,7 @@ execve("./script", [ "A", "B", "C" ], []);
 ```
 </CodeBlock>
 
-This hypothetical `script` file has the following shebang as its first line:
+이 가상의 `script` 파일은 첫 번째 줄로 다음 shebang을 가지고 있습니다:
 
 <CodeBlock name='script' startLine={1}>
 ```js
@@ -233,7 +233,7 @@ This hypothetical `script` file has the following shebang as its first line:
 ```
 </CodeBlock>
 
-The modified `argv` finally passed to the Node interpreter will be:
+Node 인터프리터에 최종적으로 전달되는 수정된 `argv`는 다음과 같습니다:
 
 <CodeBlock>
 ```c
@@ -242,28 +242,28 @@ The modified `argv` finally passed to the Node interpreter will be:
 </CodeBlock>
 </blockquote>
 
-After updating `argv`, the handler finishes preparing the file for execution by setting `linux_binprm.interp` to the interpreter path (in this case, the Node binary). Finally, it returns 0 to indicate success preparing the program for execution.
+`argv`를 업데이트한 후, 핸들러는 `linux_binprm.interp`를 인터프리터 경로(이 경우 Node 바이너리)로 설정하여 실행을 위한 파일 준비를 마칩니다. 마지막으로, 프로그램 실행 준비 성공을 나타내기 위해 0을 반환합니다.
 
-### Format Highlight: Miscellaneous Interpreters
+### 형식 하이라이트: 기타 인터프리터
 
-Another interesting handler is `binfmt_misc`. It opens up the ability to add some limited formats through userland configuration, by mounting a special file system at `/proc/sys/fs/binfmt_misc/`. Programs can perform [specially formatted](https://docs.kernel.org/admin-guide/binfmt-misc.html) writes to files in this directory to add their own handlers. Each configuration entry specifies:
+또 다른 흥미로운 핸들러는 `binfmt_misc`입니다. 이것은 `/proc/sys/fs/binfmt_misc/`에 특수 파일 시스템을 마운트함으로써 사용자 공간 구성을 통해 일부 제한된 형식을 추가할 수 있는 능력을 엽니다. 프로그램은 이 디렉토리의 파일에 [특별히 형식화된](https://docs.kernel.org/admin-guide/binfmt-misc.html) 쓰기를 수행하여 자체 핸들러를 추가할 수 있습니다. 각 구성 항목은 다음을 지정합니다:
 
-- How to detect their file format. This can specify either a magic number at a certain offset or a file extension to look for.
-- The path to an interpreter executable. There's no way to specify interpreter arguments, so a wrapper script is needed if those are desired.
-- Some configuration flags, including one specifying how `binfmt_misc` updates `argv`.
+- 파일 형식을 감지하는 방법. 이것은 특정 오프셋의 매직 넘버나 찾을 파일 확장자를 지정할 수 있습니다.
+- 인터프리터 실행 파일의 경로. 인터프리터 인수를 지정할 방법이 없으므로 원하는 경우 래퍼 스크립트가 필요합니다.
+- `binfmt_misc`가 `argv`를 업데이트하는 방법을 지정하는 하나를 포함한 일부 구성 플래그.
 
-This `binfmt_misc` system is often used by Java installations, configured to detect class files by their `0xCAFEBABE` magic bytes and JAR files by their extension. On my particular system, a  handler is configured that detects Python bytecode by its .pyc extension and passes it to the appropriate handler.
+이 `binfmt_misc` 시스템은 종종 Java 설치에서 사용되며, `0xCAFEBABE` 매직 바이트로 클래스 파일을 감지하고 확장자로 JAR 파일을 감지하도록 구성됩니다. 제 특정 시스템에서는 .pyc 확장자로 Python 바이트코드를 감지하고 적절한 핸들러에 전달하도록 구성된 핸들러가 있습니다.
 
-This is a pretty cool way to let program installers add support for their own formats without needing to write highly privileged kernel code.
+이것은 프로그램 설치 프로그램이 높은 권한의 커널 코드를 작성할 필요 없이 자체 형식에 대한 지원을 추가할 수 있게 하는 꽤 멋진 방법입니다.
 
-## In the End (Not the Linkin Park Song)
+## 결국에는 (Linkin Park 노래가 아님)
 
-An exec syscall will always end up in one of two paths:
+exec 시스템 콜은 항상 두 가지 경로 중 하나로 끝날 것입니다:
 
-- It will eventually reach an executable binary format that it understands, perhaps after several layers of script interpreters, and run that code. At this point, the old code has been replaced.
-- ... or it will exhaust all its options and return an error code to the calling program, tail between its legs.
+- 여러 계층의 스크립트 인터프리터를 거친 후 결국 이해하는 실행 가능한 바이너리 형식에 도달하여 해당 코드를 실행합니다. 이 시점에서 이전 코드는 교체되었습니다.
+- ... 또는 모든 옵션을 소진하고 꼬리를 다리 사이에 끼고 호출 프로그램에 오류 코드를 반환합니다.
 
-If you've ever used a Unix-like system, you might've noticed that shell scripts run from a terminal still execute if they don't have a shebang line or `.sh` extension. You can test this out right now if you have a non-Windows terminal handy:
+Unix 계열 시스템을 사용한 적이 있다면, 터미널에서 실행된 셸 스크립트가 shebang 줄이나 `.sh` 확장자가 없어도 여전히 실행된다는 것을 알아차렸을 것입니다. 비-Windows 터미널이 있다면 지금 바로 테스트해볼 수 있습니다:
 
 <CodeBlock name='Shell session'>
 ```
@@ -274,18 +274,18 @@ hello
 ```
 </CodeBlock>
 
-(`chmod +x` tells the OS that a file is an executable. You won't be able to run it otherwise.)
+(`chmod +x`는 OS에 파일이 실행 가능하다고 알려줍니다. 그렇지 않으면 실행할 수 없습니다.)
 
-So, why does the shell script run as a shell script? The kernel's format handlers should have no clear way of detecting shell scripts without any discernible label!
+그렇다면, 왜 셸 스크립트가 셸 스크립트로 실행될까요? 커널의 형식 핸들러는 식별 가능한 레이블이 없는 셸 스크립트를 감지할 명확한 방법이 없어야 합니다!
 
-Well, it turns out that this behavior isn't part of the kernel. It's actually a common way for your *shell* to handle a failure case.
+글쎄요, 이 동작은 커널의 일부가 아니라는 것이 밝혀졌습니다. 실제로 *셸*이 실패 사례를 처리하는 일반적인 방법입니다.
 
-When you execute a file using a shell and the exec syscall fails, most shells will *retry executing the file as a shell script* by executing a shell with the filename as the first argument. Bash will typically use itself as this interpreter, while ZSH uses whatever `sh` is, usually [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell).
+셸을 사용하여 파일을 실행하고 exec 시스템 콜이 실패하면, 대부분의 셸은 첫 번째 인수로 파일 이름을 사용하여 셸을 실행하여 *파일을 셸 스크립트로 다시 실행하려고 시도*합니다. Bash는 일반적으로 자신을 이 인터프리터로 사용하는 반면, ZSH는 `sh`가 무엇이든 사용하며, 일반적으로 [Bourne shell](https://en.wikipedia.org/wiki/Bourne_shell)입니다.
 
-This behavior is so common because it's specified in [*POSIX*](https://en.wikipedia.org/wiki/POSIX), an old standard designed to make code portable between Unix systems. While POSIX isn't strictly followed by most tools or operating systems, many of its conventions are still shared.
+이 동작이 매우 일반적인 이유는 [*POSIX*](https://en.wikipedia.org/wiki/POSIX)에 지정되어 있기 때문입니다. POSIX는 Unix 시스템 간에 코드를 이식 가능하게 만들기 위해 설계된 오래된 표준입니다. POSIX는 대부분의 도구나 운영 체제에 의해 엄격하게 따라지지는 않지만, 많은 관례가 여전히 공유됩니다.
 
-> If \[an exec syscall\] fails due to an error equivalent to the `[ENOEXEC]` error, **the shell shall execute a command equivalent to having a shell invoked with the command name as its first operand**, with any remaining arguments passed to the new shell. If the executable file is not a text file, the shell may bypass this command execution. In this case, it shall write an error message and shall return an exit status of 126.
-> 
-> *Source: <cite>[Shell Command Language, POSIX.1-2017](https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/V3_chap02.html#tag_18_09_01_01)</cite>*
+> \[exec 시스템 콜이\] `[ENOEXEC]` 오류와 동등한 오류로 인해 실패하면, **셸은 명령 이름을 첫 번째 피연산자로 하여 셸을 호출한 것과 동등한 명령을 실행해야 합니다**, 나머지 인수는 새 셸에 전달됩니다. 실행 가능한 파일이 텍스트 파일이 아니면, 셸은 이 명령 실행을 우회할 수 있습니다. 이 경우 오류 메시지를 작성하고 종료 상태 126을 반환해야 합니다.
+>
+> *출처: <cite>[Shell Command Language, POSIX.1-2017](https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/V3_chap02.html#tag_18_09_01_01)</cite>*
 
-Computers are so cool!
+컴퓨터는 정말 멋집니다!

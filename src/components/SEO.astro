@@ -16,7 +16,7 @@ const bannerHeight = 640
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site)
 canonicalUrl.pathname = canonicalUrl.pathname.replace(/\/$/, '') // Strip slash from the end of the path
 
-const description = 'Curious exactly what happens when you run a program on your computer? Learn how multiprocessing works, what system calls really are, how computers manage memory with hardware interrupts, and how Linux loads executables.'
+const description = '컴퓨터에서 프로그램을 실행할 때 정확히 무슨 일이 일어나는지 궁금하신가요? 멀티프로세싱의 작동 방식, 시스템 콜의 실체, 컴퓨터가 하드웨어 인터럽트로 메모리를 관리하는 방법, 그리고 Linux가 실행 파일을 로드하는 방법을 배워보세요.'
 const publishedAt = new Date(2023, 6, 17)
 const articleTitle = 'Putting the "You" in CPU'
 const chapterTitle = chapter.data.title.replace(/[“”]/g, '"')

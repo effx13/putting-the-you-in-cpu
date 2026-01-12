@@ -1,19 +1,19 @@
 ---
 chapter: 0
-title: Intro
-shortname: Intro
+title: 소개
+shortname: 소개
 slug: intro
 updatedAt: 2023-07-18T20:39:49.365Z
 ---
 
-I've done [a lot of things with computers](https://github.com/kognise), but I've always had a gap in my knowledge: what exactly happens when you run a program on your computer? I thought about this gap — I had most of the requisite low-level knowledge, but I was struggling to piece everything together. Are programs really executing directly on the CPU, or is something else going on? I've used syscalls, but how do they *work*? What are they, really? How do multiple programs run at the same time?
+저는 컴퓨터로 [많은 일들을 해왔지만](https://github.com/kognise), 항상 지식에 공백이 있었습니다. 컴퓨터에서 프로그램을 실행하면 정확히 무슨 일이 일어나는 걸까요? 이 공백에 대해 생각해봤습니다 — 저는 대부분의 필수적인 저수준 지식을 가지고 있었지만, 모든 것을 하나로 연결하는 데 어려움을 겪고 있었습니다. 프로그램이 정말로 CPU에서 직접 실행되는 걸까요, 아니면 다른 무언가가 진행되는 걸까요? 저는 시스템 콜(syscall)을 사용해봤지만, 그것들이 어떻게 *작동*할까요? 정말로 무엇일까요? 어떻게 여러 프로그램이 동시에 실행될까요?
 
-<img src='/images/writing-this-article.png' loading='eager' style='margin: 40px 0;' alt='A scrawled digital drawing. Someone with long hair is confused as they peer down at a computer ingesting binary. Suddenly, they have an idea! They start researching on a desktop computer with bad posture.' width='1708' height='536' />
+<img src='/images/writing-this-article.png' loading='eager' style='margin: 40px 0;' alt='낙서 스타일의 디지털 그림. 긴 머리를 가진 사람이 이진수를 섭취하는 컴퓨터를 내려다보며 혼란스러워하고 있습니다. 갑자기 아이디어가 떠오릅니다! 나쁜 자세로 데스크톱 컴퓨터에서 조사를 시작합니다.' width='1708' height='536' />
 
-I cracked and started figuring as much out as possible. There aren't many comprehensive systems resources if you aren't going to college, so I had to sift through tons of different sources of varying quality and sometimes conflicting information. A couple weeks of research and almost 40 pages of notes later, I think I have a much better idea of how computers work from startup to program execution. I would've killed for one solid article explaining what I learned, so I'm writing the article that I wished I had.
+참다 못해 가능한 한 많은 것을 알아내기 시작했습니다. 대학에 가지 않는다면 포괄적인 시스템 리소스가 많지 않기 때문에, 품질이 다양하고 때로는 상충되는 정보를 가진 수많은 출처를 뒤져야 했습니다. 몇 주간의 연구와 거의 40페이지에 달하는 노트 후에, 저는 컴퓨터가 시작부터 프로그램 실행까지 어떻게 작동하는지 훨씬 더 잘 이해하게 되었다고 생각합니다. 제가 배운 것을 설명하는 확실한 글 하나가 있었다면 목숨이라도 걸었을 것이기에, 제가 원했던 그 글을 쓰고 있습니다.
 
-And you know what they say... you only truly understand something if you can explain it to someone else.
+그리고 사람들이 뭐라고 하죠... 다른 사람에게 설명할 수 있을 때만 진정으로 이해한다고.
 
-> In a hurry? Feel like you know this stuff already?
+> 바쁘신가요? 이미 이런 걸 안다고 생각하시나요?
 >
-> [Read chapter 3](/how-to-run-a-program) and I guarantee you will learn something new. Unless you're like, Linus Torvalds himself.
+> [3장을 읽어보세요](/how-to-run-a-program) 그러면 새로운 것을 배우실 거라 장담합니다. 당신이 리누스 토르발스 본인이 아닌 한 말이죠.

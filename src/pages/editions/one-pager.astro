@@ -30,19 +30,19 @@ const rendered: [ CollectionEntry<'chapters'>, Awaited<Render['.mdx']> ][]
 		<div class='content'>
 			<h1><ColoredTitle onDark /></h1>
 			<p class='byline'>
-				By
+				작성자:
 				<a target='_blank' href='https://kognise.dev/'>Lexi Mattick</a>
 				&
 				<a href='https://hackclub.com/'>Hack Club</a>
 				&middot;
-				July, 2023
+				2023년 7월
 			</p>
 		</div>
 		<div class='editions'>
-			<div class='label'>Editions</div>
+			<div class='label'>에디션</div>
 			<div>
-				<a href='/'>Normal</a> &middot;
-				<strong>One-Pager</strong> &middot;
+				<a href='/'>일반</a> &middot;
+				<strong>단일 페이지</strong> &middot;
 				<a href='/editions/printable.pdf'>PDF</a> <!--&middot;
 				<a href='/editions/book.epub'>EPUB</a>-->
 			</div>
@@ -53,7 +53,7 @@ const rendered: [ CollectionEntry<'chapters'>, Awaited<Render['.mdx']> ][]
 	<main>
 		<div class='content'>
 			{rendered.map(([ chapter, { Content } ]) => <>
-				<h2 id={chapter.slug}>Chapter {chapter.data.chapter}: {chapter.data.title}</h2>
+				<h2 id={chapter.slug}>챕터 {chapter.data.chapter}: {chapter.data.title}</h2>
 				<DowngradeHeadings>
 					<Content />
 				</DowngradeHeadings>

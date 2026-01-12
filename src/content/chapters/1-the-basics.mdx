@@ -1,143 +1,143 @@
 ---
 chapter: 1
-title: The “Basics”
-shortname: Basics
+title: "기초"
+shortname: 기초
 slug: the-basics
 updatedAt: 2023-07-19T18:57:54.630Z
 ---
 
-The one thing that surprised me over and over again while writing this article was how *simple* computers are. It's still hard for me not to psych myself out, expecting more complexity or abstraction than actually exists! If there's one thing you should burn into your brain before continuing, it's that everything that seems simple actually is that simple. This simplicity is very beautiful and sometimes very, very cursed.
+이 글을 쓰면서 계속해서 저를 놀라게 한 한 가지는 컴퓨터가 얼마나 *단순한지*였습니다. 실제보다 더 복잡하거나 추상적일 것이라고 기대하며 스스로를 긴장시키지 않는 것이 여전히 어렵습니다! 계속 진행하기 전에 뇌에 새겨야 할 한 가지가 있다면, 단순해 보이는 모든 것이 실제로 그만큼 단순하다는 것입니다. 이 단순함은 매우 아름답고 때로는 매우, 매우 저주받았습니다.
 
-Let's start with the basics of how your computer works at its very core.
+컴퓨터가 핵심에서 어떻게 작동하는지에 대한 기초부터 시작하겠습니다.
 
-## How Computers Are Architected
+## 컴퓨터의 구조
 
-The *central processing unit* (CPU) of a computer is in charge of all computation. It's the big cheese. The shazam alakablam. It starts chugging as soon as you start your computer, executing instruction after instruction after instruction.
+컴퓨터의 *중앙 처리 장치*(CPU)는 모든 연산을 담당합니다. 최고 책임자입니다. 요술봉입니다. 컴퓨터를 시작하자마자 작동하기 시작하여 명령어를 연속적으로 실행합니다.
 
-The first mass-produced CPU was the [Intel 4004](http://www.intel4004.com/), designed in the late 60s by an Italian physicist and engineer named Federico Faggin. It was a 4-bit architecture instead of the [64-bit](https://en.wikipedia.org/wiki/64-bit_computing) systems we use today, and it was far less complex than modern processors, but a lot of its simplicity does still remain.
+최초로 대량 생산된 CPU는 1960년대 후반 이탈리아 물리학자이자 엔지니어인 페데리코 파긴(Federico Faggin)이 설계한 [Intel 4004](http://www.intel4004.com/)였습니다. 오늘날 사용하는 [64비트](https://en.wikipedia.org/wiki/64-bit_computing) 시스템 대신 4비트 아키텍처였으며, 현대 프로세서보다 훨씬 덜 복잡했지만, 그 단순함의 많은 부분이 여전히 남아있습니다.
 
-The "instructions" that CPUs execute are just binary data: a byte or two to represent what instruction is being run (the opcode), followed by whatever data is needed to run the instruction. What we call *machine code* is nothing but a series of these binary instructions in a row. [Assembly](https://en.wikipedia.org/wiki/Assembly_language) is a helpful syntax for reading and writing machine code that's easier for humans to read and write than raw bits; it is always compiled to the binary that your CPU knows how to read.
+CPU가 실행하는 "명령어"는 단지 이진 데이터입니다: 실행되는 명령어를 나타내는 1~2바이트(opcode)와 그 뒤에 명령어를 실행하는 데 필요한 모든 데이터가 따릅니다. 우리가 *기계어(machine code)*라고 부르는 것은 이러한 이진 명령어들의 연속일 뿐입니다. [어셈블리](https://en.wikipedia.org/wiki/Assembly_language)는 원시 비트보다 인간이 읽고 쓰기 쉬운 기계어를 읽고 쓰는 데 유용한 구문입니다. 항상 CPU가 읽을 수 있는 이진수로 컴파일됩니다.
 
-<img src='/images/assembly-to-machine-code-translation.png' loading='eager' style='max-width: 400px;' alt='A diagram demonstrating how machine code translates to assembly and back. A bidirectional arrow connects three examples: Machine Code (Binary) followed by 3 bytes of binary numbers, Machine Code (Hex) followed by those 3 bytes translated to hex (0x83, 0xC3, 0x0A), and Assembly followed by "add ebx, 10". The Assembly and Machine Code are color-coded so it is clear that each byte of the machine code translate to one word in the assembly.' width='935' height='505' />
+<img src='/images/assembly-to-machine-code-translation.png' loading='eager' style='max-width: 400px;' alt='기계어가 어셈블리로 변환되고 다시 돌아가는 방법을 보여주는 다이어그램. 양방향 화살표가 세 가지 예를 연결합니다: 기계어(이진수) 뒤에 3바이트의 이진수, 기계어(16진수) 뒤에 해당 바이트를 16진수로 변환한 것(0x83, 0xC3, 0x0A), 그리고 어셈블리 뒤에 "add ebx, 10"이 표시됩니다. 어셈블리와 기계어는 색상으로 구분되어 기계어의 각 바이트가 어셈블리의 한 단어로 변환되는 것이 명확합니다.' width='935' height='505' />
 
-> An aside: instructions aren't always represented 1:1 in machine code as in the above example. For example, `add eax, 512` translates to `05 00 02 00 00`.
-> 
-> The first byte (`05`) is an opcode specifically representing *adding the EAX register to a 32-bit number*. The remaining bytes are 512 (`0x200`) in [little-endian](https://en.wikipedia.org/wiki/Endianness) byte order.
+> 참고: 명령어가 위의 예제처럼 항상 기계어에서 1:1로 표현되는 것은 아닙니다. 예를 들어, `add eax, 512`는 `05 00 02 00 00`으로 변환됩니다.
 >
-> Defuse Security created [a helpful tool](https://defuse.ca/online-x86-assembler.htm) for playing around with the translation between assembly and machine code.
-
-RAM is your computer's main memory bank, a large multi-purpose space which stores all the data used by programs running on your computer. That includes the program code itself as well as the code at the core of the operating system. The CPU always reads machine code directly from RAM, and code can't be run if it isn't loaded into RAM.
-
-The CPU stores an *instruction pointer* which points to the location in RAM where it's going to fetch the next instruction. After executing each instruction, the CPU moves the pointer and repeats. This is the *fetch-execute cycle*.
-
-<img src='/images/fetch-execute-cycle.png' loading='lazy' style='max-width: 360px; margin: 0 auto;' alt='A diagram demonstrating the fetch-execute cycle. There are two bubbles of text. The first is labeled "Fetch" and has the text "Read instruction from memory at the current instruction pointer." The second is titled "Execute" and has the text "Run the instruction and then move the instruction pointer." The fetch bubble has an arrow pointing to the execute bubble, and the execute bubble has an arrow pointing back to the fetch bubble, implying a repeated process.' width='848' height='458' />
-
-After executing an instruction, the pointer moves forward to immediately after the instruction in RAM so that it now points to the next instruction. That's why code runs! The instruction pointer just keeps chugging forward, executing machine code in the order in which it has been stored in memory. Some instructions can tell the instruction pointer to jump somewhere else instead, or jump different places depending on a certain condition; this makes reusable code and conditional logic possible.
-
-This instruction pointer is stored in a [*register*](https://en.wikipedia.org/wiki/Processor_register). Registers are small storage buckets that are extremely fast for the CPU to read and write to. Each CPU architecture has a fixed set of registers, used for everything from storing temporary values during computations to configuring the processor.
-
-Some registers are directly accessible from machine code, like `ebx` in the earlier diagram.
-
-Other registers are only used internally by the CPU, but can often be updated or read using specialized instructions. One example is the instruction pointer, which can't be read directly but can be updated with, for example, a jump instruction.
-
-## Processors Are Naive
-
-Let's go back to the original question: what happens when you run an executable program on your computer? First, a bunch of magic happens to get ready to run it — we’ll work through all of this later — but at the end of the process there’s machine code in a file somewhere. The operating system loads this into RAM and instructs the CPU to jump the instruction pointer to that position in RAM. The CPU continues running its fetch-execute cycle as usual, so the program begins executing!
-
-(This was one of those psyching-myself-out moments for me — seriously, this is how the program you are using to read this article is running! Your CPU is fetching your browser's instructions from RAM in sequence and directly executing them, and they're rendering this article.)
-
-<img src='/images/instruction-pointer.png' loading='lazy' style='max-width: 400px;' alt='A diagram depicting a series of bytes of machine code in RAM. A highlighted byte is pointed to by an arrow labeled "Instruction Pointer," and there are arrows representing how the instruction pointer moves forward in RAM.' width='935' height='372' />
-
-It turns out CPUs have a super basic worldview; they only see the current instruction pointer and a bit of internal state. Processes are entirely operating system abstractions, not something CPUs natively understand or keep track of.
-
-*\*waves hands\* processes are abstractions made up by ~~os devs~~ big byte to sell more computers*
-
-For me, this raises more questions than it answers:
-
-1. If the CPU doesn’t know about multiprocessing and just executes instructions sequentially, why doesn’t it get stuck inside whatever program it’s running? How can multiple programs run at once?
-2. If programs run directly on the CPU, and the CPU can directly access RAM, why can't code access memory from other processes, or, god forbid, the kernel?
-3. Speaking of which, what's the mechanism that prevents every process from running any instruction and doing anything to your computer? AND WHAT'S A DAMN SYSCALL?
-
-The question about memory deserves its own section and is covered in [chapter 5](/the-translator-in-your-computer) — the TL;DR is that most memory accesses actually go through a layer of misdirection that remaps the entire address space. For now, we're going to pretend that programs can access all RAM directly and computers can only run one process at once. We'll explain away both of these assumptions in time.
-
-It's time to leap through our first rabbit hole into a land filled with syscalls and security rings.
-
-> **Aside: what is a kernel, btw?**
-> 
-> Your computer's operating system, like macOS, Windows, or Linux, is the collection of software that runs on your computer and makes all the basic stuff work. "Basic stuff" is a really general term, and so is "operating system" — depending on who you ask, it can include such things as the apps, fonts, and icons that come with your computer by default.
-> 
-> The kernel, however, is the core of the operating system. When you boot up your computer, the instruction pointer starts at a program somewhere. That program is the kernel. The kernel has near-full access to your computer's memory, peripherals, and other resources, and is in charge of running software installed on your computer (known as userland programs). We'll learn about how the kernel has this access — and how userland programs don't — over the course of this article.
+> 첫 번째 바이트(`05`)는 특별히 *EAX 레지스터에 32비트 숫자 더하기*를 나타내는 opcode입니다. 나머지 바이트는 [리틀 엔디안](https://en.wikipedia.org/wiki/Endianness) 바이트 순서로 512(`0x200`)입니다.
 >
-> Linux is just a kernel and needs plenty of userland software like shells and display servers to be usable. The kernel in macOS is called [XNU](https://en.wikipedia.org/wiki/XNU) and is Unix-like, and the modern Windows kernel is called the [NT Kernel](https://en.wikipedia.org/wiki/Architecture_of_Windows_NT).
+> Defuse Security는 어셈블리와 기계어 간의 변환을 실험해볼 수 있는 [유용한 도구](https://defuse.ca/online-x86-assembler.htm)를 만들었습니다.
 
-## Two Rings to Rule Them All
+RAM은 컴퓨터의 주 메모리 뱅크로, 컴퓨터에서 실행 중인 프로그램이 사용하는 모든 데이터를 저장하는 대용량 다목적 공간입니다. 여기에는 프로그램 코드 자체와 운영 체제 핵심의 코드가 포함됩니다. CPU는 항상 RAM에서 직접 기계어를 읽으며, RAM에 로드되지 않은 코드는 실행할 수 없습니다.
 
-The *mode* (sometimes called privilege level or ring) a processor is in controls what it's allowed to do. Modern architectures have at least two options: kernel/supervisor mode and user mode. While an architecture might support more than two modes, only kernel mode and user mode are commonly used these days.
+CPU는 다음에 가져올 명령어가 있는 RAM의 위치를 가리키는 *명령어 포인터(instruction pointer)*를 저장합니다. 각 명령어를 실행한 후, CPU는 포인터를 이동하고 반복합니다. 이것이 *페치-실행 사이클(fetch-execute cycle)*입니다.
 
-In kernel mode, anything goes: the CPU is allowed to execute any supported instruction and access any memory. In user mode, only a subset of instructions is allowed, I/O and memory access is limited, and many CPU settings are locked. Generally, the kernel and drivers run in kernel mode while applications run in user mode.
+<img src='/images/fetch-execute-cycle.png' loading='lazy' style='max-width: 360px; margin: 0 auto;' alt='페치-실행 사이클을 보여주는 다이어그램. 두 개의 텍스트 버블이 있습니다. 첫 번째는 "페치"로 레이블이 지정되어 있으며 "현재 명령어 포인터의 메모리에서 명령어 읽기"라는 텍스트가 있습니다. 두 번째는 "실행"으로 제목이 지정되어 있으며 "명령어를 실행한 다음 명령어 포인터 이동"이라는 텍스트가 있습니다. 페치 버블에는 실행 버블을 가리키는 화살표가 있고, 실행 버블에는 페치 버블로 다시 가리키는 화살표가 있어 반복되는 프로세스를 암시합니다.' width='848' height='458' />
 
-Processors start in kernel mode. Before executing a program, the kernel initiates the switch to user mode.
+명령어를 실행한 후 포인터는 RAM에서 명령어 바로 다음으로 이동하여 이제 다음 명령어를 가리킵니다. 그래서 코드가 실행됩니다! 명령어 포인터는 계속 앞으로 나아가며 메모리에 저장된 순서대로 기계어를 실행합니다. 일부 명령어는 명령어 포인터에게 다른 곳으로 점프하거나 특정 조건에 따라 다른 곳으로 점프하도록 지시할 수 있습니다. 이것이 재사용 가능한 코드와 조건부 로직을 가능하게 합니다.
 
-<img src='/images/kernel-mode-vs-user-mode.png' loading='lazy' style='max-width: 500px; margin: 0 auto;' alt='Two fake iMessage screenshots demonstrating the different between user and kernel mode protections. The first, labeled Kernel Mode: right side says "Read this protected memory!", left side replies "Here you go, dear :)". The second, labeled User Mode: right side says "Read this protected memory!", left side replies "No! Segmentation fault!"' width='1072' height='433' />
+이 명령어 포인터는 [*레지스터(register)*](https://en.wikipedia.org/wiki/Processor_register)에 저장됩니다. 레지스터는 CPU가 읽고 쓰기에 매우 빠른 작은 저장 공간입니다. 각 CPU 아키텍처에는 고정된 레지스터 집합이 있으며, 계산 중 임시 값 저장부터 프로세서 구성까지 모든 용도로 사용됩니다.
 
-An example of how processor modes manifest in a real architecture: on x86-64, the current privilege level (CPL) can be read from a register called `cs` (code segment). Specifically, the CPL is contained in the two [least significant bits](https://en.wikipedia.org/wiki/Bit_numbering) of the `cs` register. Those two bits can store x86-64's four possible rings: ring 0 is kernel mode and ring 3 is user mode. Rings 1 and 2 are designed for running drivers but are only used by a handful of older niche operating systems. If the CPL bits are `11`, for example, the CPU is running in ring 3: user mode.
- 
-## What Even is a Syscall?
+일부 레지스터는 기계어에서 직접 액세스할 수 있습니다(이전 다이어그램의 `ebx`처럼).
 
-Programs run in user mode because they can't be trusted with full access to the computer. User mode does its job, preventing access to most of the computer — but programs need to be able to access I/O, allocate memory, and interact with the operating system *somehow*! To do so, software running in user mode has to ask the operating system kernel for help. The OS can then implement its own security protections to prevent programs from doing anything malicious.
+다른 레지스터는 CPU 내부에서만 사용되지만 특수 명령어를 사용하여 업데이트하거나 읽을 수 있는 경우가 많습니다. 한 예는 명령어 포인터로, 직접 읽을 수는 없지만 점프 명령어로 업데이트할 수 있습니다.
 
-If you've ever written code that interacts with the OS, you'll probably recognize functions like `open`, `read`, `fork`, and `exit`. Below a couple of layers of abstraction, these functions all use *system calls* to ask the OS for help. A system call is a special procedure that lets a program start a transition from user space to kernel space, jumping from the program's code into OS code.
+## 프로세서는 순진합니다
 
-User space to kernel space control transfers are accomplished using a processor feature called [*software interrupts*](https://en.wikipedia.org/wiki/Interrupt#Software_interrupts):
+원래 질문으로 돌아가 봅시다: 컴퓨터에서 실행 가능한 프로그램을 실행하면 무슨 일이 일어날까요? 먼저, 실행 준비를 위해 많은 마법이 일어납니다 — 이 모든 것은 나중에 설명하겠습니다 — 하지만 프로세스가 끝나면 어딘가 파일에 기계어가 있습니다. 운영 체제는 이것을 RAM에 로드하고 CPU에게 명령어 포인터를 RAM의 해당 위치로 점프하도록 지시합니다. CPU는 평소처럼 페치-실행 사이클을 계속 실행하므로 프로그램이 실행되기 시작합니다!
 
-1. During the boot process, the operating system stores a table called an [*interrupt vector table*](https://en.wikipedia.org/wiki/Interrupt_vector_table) (IVT; x86-64 calls this the [interrupt descriptor table](https://en.wikipedia.org/wiki/Interrupt_descriptor_table)) in RAM and registers it with the CPU. The IVT maps interrupt numbers to handler code pointers.
+(이것은 저에게 스스로를 긴장시키는 순간 중 하나였습니다 — 정말로, 이것이 당신이 이 글을 읽는 데 사용하는 프로그램이 실행되는 방식입니다! CPU는 브라우저의 명령어를 RAM에서 순차적으로 가져와 직접 실행하고, 이 글을 렌더링하고 있습니다.)
 
-  <img src='/images/interrupt-vector-table.png' loading='lazy' style='max-width: 300px; margin: 0 auto;' alt='A image of a table captioned "Interrupt Vector Table". The first column, labeled with a number sign, has a series of numbers starting at 01 and going to 04. The corresponding second column of the table, labeled "Handler Address", contains a random 8-byte-long hex number per entry. The bottom of the table has the text "So on and such forth..."' width='555' height='463' />
+<img src='/images/instruction-pointer.png' loading='lazy' style='max-width: 400px;' alt='RAM의 일련의 기계어 바이트를 나타내는 다이어그램. 강조 표시된 바이트는 "명령어 포인터"로 레이블이 지정된 화살표로 가리켜지며, 명령어 포인터가 RAM에서 앞으로 이동하는 방법을 나타내는 화살표가 있습니다.' width='935' height='372' />
 
-2. Then, userland programs can use an instruction like [INT](https://www.felixcloutier.com/x86/intn:into:int3:int1) which tells the processor to look up the given interrupt number in the IVT, switch to kernel mode, and then jump the instruction pointer to the memory address stored in the IVT.
+CPU는 매우 기본적인 세계관을 가지고 있습니다. 현재 명령어 포인터와 약간의 내부 상태만 봅니다. 프로세스는 전적으로 운영 체제 추상화이며, CPU가 기본적으로 이해하거나 추적하는 것이 아닙니다.
 
-When this kernel code finishes, it uses an instruction like [IRET](https://www.felixcloutier.com/x86/iret:iretd:iretq) to tell the CPU to switch back to user mode and return the instruction pointer to where it was when the interrupt was triggered.
+*\*손을 휘두르며\* 프로세스는 더 많은 컴퓨터를 팔기 위해 ~~os 개발자들~~ 빅 바이트가 만들어낸 추상화입니다*
 
-(If you were curious, the interrupt ID used for system calls on Linux is `0x80`. You can read a list of Linux system calls on [Michael Kerrisk's online manpage directory](https://man7.org/linux/man-pages/man2/syscalls.2.html).)
+저에게 이것은 답하는 것보다 더 많은 질문을 불러일으킵니다:
 
-### Wrapper APIs: Abstracting Away Interrupts
+1. CPU가 멀티프로세싱에 대해 알지 못하고 명령어를 순차적으로 실행하기만 한다면, 실행 중인 프로그램 안에 갇히지 않는 이유는 무엇일까요? 어떻게 여러 프로그램이 동시에 실행될 수 있을까요?
+2. 프로그램이 CPU에서 직접 실행되고 CPU가 RAM에 직접 액세스할 수 있다면, 왜 코드가 다른 프로세스의 메모리나, 더 나쁘게는 커널에 액세스할 수 없을까요?
+3. 그리고 말이 나와서 말인데, 모든 프로세스가 모든 명령어를 실행하고 컴퓨터에 무엇이든 하는 것을 방지하는 메커니즘은 무엇일까요? 그리고 대체 시스템 콜이 뭡니까?
 
-Here's what we know so far about system calls:
+메모리에 대한 질문은 별도의 섹션이 필요하며 [5장](/the-translator-in-your-computer)에서 다룹니다 — 요약하자면 대부분의 메모리 액세스는 실제로 전체 주소 공간을 다시 매핑하는 간접 계층을 거칩니다. 지금은 프로그램이 모든 RAM에 직접 액세스할 수 있고 컴퓨터가 한 번에 하나의 프로세스만 실행할 수 있다고 가정하겠습니다. 이 두 가지 가정은 시간이 지나면 설명할 것입니다.
 
-- User mode programs can't access I/O or memory directly. They have to ask the OS for help interacting with the outside world.
-- Programs can delegate control to the OS with special machine code instructions like INT and IRET.
-- Programs can't directly switch privilege levels; software interrupts are safe because the processor has been preconfigured *by the OS* with where in the OS code to jump to. The interrupt vector table can only be configured from kernel mode.
+이제 시스템 콜과 보안 링으로 가득 찬 땅으로의 첫 번째 토끼굴을 뛰어넘을 시간입니다.
 
-Programs need to pass data to the operating system when triggering a syscall; the OS needs to know which specific system call to execute alongside any data the syscall itself needs, for example, what filename to open. The mechanism for passing this data varies by operating system and architecture, but it's usually done by placing data in certain registers or on the stack before triggering the interrupt.
+> **참고: 그런데 커널이 뭐죠?**
+>
+> macOS, Windows 또는 Linux와 같은 컴퓨터의 운영 체제는 컴퓨터에서 실행되어 모든 기본 작업을 수행하는 소프트웨어 모음입니다. "기본 작업"은 매우 일반적인 용어이며 "운영 체제"도 마찬가지입니다 — 누구에게 묻느냐에 따라 기본적으로 컴퓨터와 함께 제공되는 앱, 글꼴 및 아이콘과 같은 것들을 포함할 수 있습니다.
+>
+> 그러나 커널은 운영 체제의 핵심입니다. 컴퓨터를 부팅하면 명령어 포인터는 어딘가의 프로그램에서 시작합니다. 그 프로그램이 커널입니다. 커널은 컴퓨터의 메모리, 주변 장치 및 기타 리소스에 대한 거의 완전한 액세스 권한을 가지며, 컴퓨터에 설치된 소프트웨어(사용자 공간 프로그램)를 실행하는 책임이 있습니다. 커널이 이 액세스 권한을 어떻게 가지는지 — 그리고 사용자 공간 프로그램이 어떻게 가지지 못하는지는 이 글의 과정에서 배우게 될 것입니다.
+>
+> Linux는 단지 커널일 뿐이며 사용 가능하려면 셸 및 디스플레이 서버와 같은 많은 사용자 공간 소프트웨어가 필요합니다. macOS의 커널은 [XNU](https://en.wikipedia.org/wiki/XNU)라고 불리며 Unix와 유사하고, 현대 Windows 커널은 [NT Kernel](https://en.wikipedia.org/wiki/Architecture_of_Windows_NT)이라고 불립니다.
 
-The variance in how system calls are called across devices means it would be wildly impractical for programmers to implement system calls themselves for every program. This would also mean operating systems couldn't change their interrupt handling for fear of breaking every program that was written to use the old system. Finally, we typically don't write programs in raw assembly anymore — programmers can't be expected to drop down to assembly any time they want to read a file or allocate memory.
+## 모두를 지배하는 두 개의 링
 
-<img src='/images/syscall-architecture-differences.png' loading='lazy' style='max-width: 650px; margin: 0 auto;' alt='A drawing captioned "System calls are implemented differently across architectures." On the left is a smiling CPU receiving some binary and spitting out a filename, file.txt. Separated on the right is a different CPU receiving the same binary data but with a confused and nauseous facial expression.' width='1057' height='360' />
+프로세서가 있는 *모드(mode)*(권한 수준 또는 링이라고도 함)는 프로세서가 허용하는 작업을 제어합니다. 현대 아키텍처에는 최소 두 가지 옵션이 있습니다: 커널/슈퍼바이저 모드와 사용자 모드. 아키텍처가 두 개 이상의 모드를 지원할 수 있지만, 요즘에는 커널 모드와 사용자 모드만 일반적으로 사용됩니다.
 
-So, operating systems provide an abstraction layer on top of these interrupts. Reusable higher-level library functions that wrap the necessary assembly instructions are provided by [libc](https://www.gnu.org/software/libc/) on Unix-like systems and part of a library called [ntdll.dll](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/libraries-and-headers) on Windows. Calls to these library functions themselves don't cause switches to kernel mode, they're just standard function calls. Inside the libraries, assembly code does actually transfer control to the kernel, and is a lot more platform-dependent than the wrapping library subroutine.
+커널 모드에서는 무엇이든 가능합니다: CPU는 지원되는 모든 명령어를 실행하고 모든 메모리에 액세스할 수 있습니다. 사용자 모드에서는 명령어의 하위 집합만 허용되고, I/O 및 메모리 액세스가 제한되며, 많은 CPU 설정이 잠겨 있습니다. 일반적으로 커널과 드라이버는 커널 모드에서 실행되고 애플리케이션은 사용자 모드에서 실행됩니다.
 
-When you call `exit(1)` from C running on a Unix-like system, that function is internally running machine code to trigger an interrupt, after placing the system call's opcode and arguments in the right registers/stack/whatever. Computers are so cool!
+프로세서는 커널 모드에서 시작합니다. 프로그램을 실행하기 전에 커널은 사용자 모드로의 전환을 시작합니다.
 
-## The Need for Speed / Let's Get CISC-y
+<img src='/images/kernel-mode-vs-user-mode.png' loading='lazy' style='max-width: 500px; margin: 0 auto;' alt='커널 모드와 사용자 모드 보호의 차이를 보여주는 두 개의 가짜 iMessage 스크린샷. 첫 번째, 커널 모드로 레이블 지정: 오른쪽은 "이 보호된 메모리를 읽어!"라고 말하고, 왼쪽은 "여기 있습니다, 친애하는 :)"라고 답장합니다. 두 번째, 사용자 모드로 레이블 지정: 오른쪽은 "이 보호된 메모리를 읽어!"라고 말하고, 왼쪽은 "안 돼! 세그멘테이션 폴트!"라고 답장합니다.' width='1072' height='433' />
 
-Many [CISC](https://en.wikipedia.org/wiki/Complex_instruction_set_computer) architectures like x86-64 contain instructions designed for system calls, created due to the prevalence of the system call paradigm.
+실제 아키텍처에서 프로세서 모드가 어떻게 나타나는지의 예: x86-64에서 현재 권한 수준(CPL)은 `cs`(코드 세그먼트)라는 레지스터에서 읽을 수 있습니다. 특히 CPL은 `cs` 레지스터의 [최하위 비트](https://en.wikipedia.org/wiki/Bit_numbering) 2개에 포함되어 있습니다. 이 두 비트는 x86-64의 네 가지 가능한 링을 저장할 수 있습니다: 링 0은 커널 모드이고 링 3은 사용자 모드입니다. 링 1과 2는 드라이버 실행을 위해 설계되었지만 소수의 오래된 틈새 운영 체제에서만 사용됩니다. CPL 비트가 `11`이면, 예를 들어 CPU는 링 3에서 실행 중입니다: 사용자 모드.
 
-Intel and AMD managed not to coordinate very well on x86-64; it actually has *two* sets of optimized system call instructions. [SYSCALL](https://www.felixcloutier.com/x86/syscall.html) and [SYSENTER](https://www.felixcloutier.com/x86/sysenter) are optimized alternatives to instructions like `INT 0x80`. Their corresponding return instructions, [SYSRET](https://www.felixcloutier.com/x86/sysret.html) and [SYSEXIT](https://www.felixcloutier.com/x86/sysexit), are designed to transition quickly back to user space and resume program code.
+## 시스템 콜이 대체 뭔가요?
 
-(AMD and Intel processors have slightly different compatibility with these instructions. `SYSCALL` is generally the best option for 64-bit programs, while `SYSENTER` has better support with 32-bit programs.)
+프로그램은 컴퓨터에 대한 완전한 액세스 권한을 신뢰할 수 없기 때문에 사용자 모드에서 실행됩니다. 사용자 모드는 컴퓨터의 대부분에 대한 액세스를 방지하는 역할을 합니다 — 하지만 프로그램은 *어떻게든* I/O에 액세스하고, 메모리를 할당하고, 운영 체제와 상호 작용할 수 있어야 합니다! 이를 위해 사용자 모드에서 실행되는 소프트웨어는 운영 체제 커널에 도움을 요청해야 합니다. 그러면 OS는 프로그램이 악의적인 작업을 하는 것을 방지하기 위해 자체 보안 보호를 구현할 수 있습니다.
 
-Representative of the style, [RISC](https://en.wikipedia.org/wiki/Reduced_instruction_set_computer) architectures tend not to have such special instructions. AArch64, the RISC architecture Apple Silicon is based on, uses only [one interrupt instruction](https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SVC--Supervisor-Call-) for syscalls and software interrupts alike. I think Mac users are doing fine&nbsp;:)
+OS와 상호 작용하는 코드를 작성한 적이 있다면 `open`, `read`, `fork`, `exit`와 같은 함수를 인식할 것입니다. 몇 가지 추상화 계층 아래에서 이러한 함수는 모두 *시스템 콜*을 사용하여 OS에 도움을 요청합니다. 시스템 콜은 프로그램이 사용자 공간에서 커널 공간으로의 전환을 시작하여 프로그램의 코드에서 OS 코드로 점프할 수 있게 하는 특수 절차입니다.
+
+사용자 공간에서 커널 공간으로의 제어 전송은 [*소프트웨어 인터럽트*](https://en.wikipedia.org/wiki/Interrupt#Software_interrupts)라는 프로세서 기능을 사용하여 수행됩니다:
+
+1. 부팅 프로세스 중에 운영 체제는 [*인터럽트 벡터 테이블*](https://en.wikipedia.org/wiki/Interrupt_vector_table)(IVT; x86-64는 이것을 [인터럽트 디스크립터 테이블](https://en.wikipedia.org/wiki/Interrupt_descriptor_table)이라고 부릅니다)이라는 테이블을 RAM에 저장하고 CPU에 등록합니다. IVT는 인터럽트 번호를 핸들러 코드 포인터에 매핑합니다.
+
+  <img src='/images/interrupt-vector-table.png' loading='lazy' style='max-width: 300px; margin: 0 auto;' alt='"인터럽트 벡터 테이블"이라는 캡션이 있는 테이블 이미지. 숫자 기호로 레이블이 지정된 첫 번째 열에는 01부터 04까지 시작하는 일련의 숫자가 있습니다. "핸들러 주소"로 레이블이 지정된 해당 두 번째 열에는 항목당 임의의 8바이트 길이 16진수가 포함되어 있습니다. 테이블 하단에는 "기타 등등..."이라는 텍스트가 있습니다.' width='555' height='463' />
+
+2. 그런 다음 사용자 공간 프로그램은 [INT](https://www.felixcloutier.com/x86/intn:into:int3:int1)와 같은 명령어를 사용하여 프로세서에게 IVT에서 주어진 인터럽트 번호를 찾고, 커널 모드로 전환한 다음 명령어 포인터를 IVT에 저장된 메모리 주소로 점프하도록 지시할 수 있습니다.
+
+이 커널 코드가 완료되면 [IRET](https://www.felixcloutier.com/x86/iret:iretd:iretq)와 같은 명령어를 사용하여 CPU에게 사용자 모드로 다시 전환하고 명령어 포인터를 인터럽트가 트리거되었을 때의 위치로 반환하도록 지시합니다.
+
+(궁금하시다면, Linux에서 시스템 콜에 사용되는 인터럽트 ID는 `0x80`입니다. [Michael Kerrisk의 온라인 manpage 디렉토리](https://man7.org/linux/man-pages/man2/syscalls.2.html)에서 Linux 시스템 콜 목록을 읽을 수 있습니다.)
+
+### 래퍼 API: 인터럽트 추상화
+
+지금까지 시스템 콜에 대해 알고 있는 내용은 다음과 같습니다:
+
+- 사용자 모드 프로그램은 I/O나 메모리에 직접 액세스할 수 없습니다. 외부 세계와 상호 작용하려면 OS에 도움을 요청해야 합니다.
+- 프로그램은 INT 및 IRET와 같은 특수 기계어 명령어로 OS에 제어를 위임할 수 있습니다.
+- 프로그램은 권한 수준을 직접 전환할 수 없습니다. 소프트웨어 인터럽트는 프로세서가 OS 코드의 어디로 점프할지 *OS에 의해* 미리 구성되었기 때문에 안전합니다. 인터럽트 벡터 테이블은 커널 모드에서만 구성할 수 있습니다.
+
+프로그램은 시스템 콜을 트리거할 때 운영 체제에 데이터를 전달해야 합니다. OS는 실행할 특정 시스템 콜과 시스템 콜 자체가 필요로 하는 데이터(예: 열 파일 이름)를 알아야 합니다. 이 데이터를 전달하는 메커니즘은 운영 체제와 아키텍처에 따라 다르지만, 일반적으로 인터럽트를 트리거하기 전에 특정 레지스터나 스택에 데이터를 배치하여 수행됩니다.
+
+장치 간에 시스템 콜이 호출되는 방식의 차이는 프로그래머가 모든 프로그램에 대해 시스템 콜을 직접 구현하는 것이 엄청나게 비실용적이라는 것을 의미합니다. 이것은 또한 운영 체제가 오래된 시스템을 사용하도록 작성된 모든 프로그램을 손상시킬 우려 없이 인터럽트 처리를 변경할 수 없다는 것을 의미합니다. 마지막으로, 우리는 일반적으로 더 이상 원시 어셈블리로 프로그램을 작성하지 않습니다 — 프로그래머가 파일을 읽거나 메모리를 할당하려고 할 때마다 어셈블리로 내려갈 것으로 기대할 수 없습니다.
+
+<img src='/images/syscall-architecture-differences.png' loading='lazy' style='max-width: 650px; margin: 0 auto;' alt='"시스템 콜은 아키텍처마다 다르게 구현됩니다."라는 캡션이 있는 그림. 왼쪽에는 일부 이진수를 받아 파일 이름 file.txt를 뱉어내는 웃는 CPU가 있습니다. 오른쪽에 분리되어 있는 것은 동일한 이진 데이터를 받지만 혼란스럽고 메스꺼운 표정을 가진 다른 CPU입니다.' width='1057' height='360' />
+
+따라서 운영 체제는 이러한 인터럽트 위에 추상화 계층을 제공합니다. 필요한 어셈블리 명령어를 래핑하는 재사용 가능한 상위 수준 라이브러리 함수는 Unix 계열 시스템에서 [libc](https://www.gnu.org/software/libc/)에 의해 제공되고 Windows에서는 [ntdll.dll](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/libraries-and-headers)이라는 라이브러리의 일부로 제공됩니다. 이러한 라이브러리 함수에 대한 호출 자체는 커널 모드로의 전환을 발생시키지 않으며, 표준 함수 호출일 뿐입니다. 라이브러리 내부에서 어셈블리 코드는 실제로 커널로 제어를 전송하며, 래핑 라이브러리 서브루틴보다 플랫폼에 훨씬 더 의존적입니다.
+
+Unix 계열 시스템에서 실행되는 C에서 `exit(1)`을 호출하면 해당 함수는 내부적으로 기계어를 실행하여 인터럽트를 트리거하며, 시스템 콜의 opcode와 인수를 올바른 레지스터/스택/등에 배치한 후입니다. 컴퓨터는 정말 멋집니다!
+
+## 속도의 필요성 / CISC해집시다
+
+x86-64와 같은 많은 [CISC](https://en.wikipedia.org/wiki/Complex_instruction_set_computer) 아키텍처에는 시스템 콜 패러다임의 보급으로 인해 생성된 시스템 콜용으로 설계된 명령어가 포함되어 있습니다.
+
+Intel과 AMD는 x86-64에서 조율을 잘 못했습니다. 실제로 *두 가지* 최적화된 시스템 콜 명령어 세트가 있습니다. [SYSCALL](https://www.felixcloutier.com/x86/syscall.html)과 [SYSENTER](https://www.felixcloutier.com/x86/sysenter)는 `INT 0x80`과 같은 명령어에 대한 최적화된 대안입니다. 이에 해당하는 반환 명령어인 [SYSRET](https://www.felixcloutier.com/x86/sysret.html)과 [SYSEXIT](https://www.felixcloutier.com/x86/sysexit)는 사용자 공간으로 빠르게 전환하고 프로그램 코드를 재개하도록 설계되었습니다.
+
+(AMD 및 Intel 프로세서는 이러한 명령어와 약간 다른 호환성을 가지고 있습니다. `SYSCALL`은 일반적으로 64비트 프로그램에 가장 적합한 옵션이며 `SYSENTER`는 32비트 프로그램에 더 나은 지원을 제공합니다.)
+
+스타일을 대표하는 [RISC](https://en.wikipedia.org/wiki/Reduced_instruction_set_computer) 아키텍처는 그러한 특수 명령어를 갖지 않는 경향이 있습니다. Apple Silicon이 기반으로 하는 RISC 아키텍처인 AArch64는 시스템 콜 및 소프트웨어 인터럽트 모두에 대해 [하나의 인터럽트 명령어](https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SVC--Supervisor-Call-)만 사용합니다. Mac 사용자들이 잘하고 있다고 생각합니다&nbsp;:)
 
 ---
 
-Whew, that was a lot! Let's do a brief recap:
+휴, 많았네요! 간단히 요약해 보겠습니다:
 
-- Processors execute instructions in an infinite fetch-execute loop and don't have any concept of operating systems or programs. The processor's mode, usually stored in a register, determines what instructions may be executed. Operating system code runs in kernel mode and switches to user mode to run programs.
-- To run a binary, the operating system switches to user mode and points the processor to the code's entry point in RAM. Because they only have the privileges of user mode, programs that want to interact with the world need to jump to OS code for help. System calls are a standardized way for programs to switch from user mode to kernel mode and into OS code.
-- Programs typically use these syscalls by calling shared library functions. These wrap machine code for either software interrupts or architecture-specific syscall instructions that transfer control to the OS kernel and switch rings. The kernel does its business and switches back to user mode and returns to the program code.
+- 프로세서는 무한 페치-실행 루프에서 명령어를 실행하며 운영 체제나 프로그램에 대한 개념이 없습니다. 일반적으로 레지스터에 저장되는 프로세서의 모드는 실행할 수 있는 명령어를 결정합니다. 운영 체제 코드는 커널 모드에서 실행되고 프로그램을 실행하기 위해 사용자 모드로 전환합니다.
+- 바이너리를 실행하기 위해 운영 체제는 사용자 모드로 전환하고 프로세서를 RAM의 코드 진입점으로 가리킵니다. 사용자 모드의 권한만 가지고 있기 때문에 세계와 상호 작용하려는 프로그램은 도움을 위해 OS 코드로 점프해야 합니다. 시스템 콜은 프로그램이 사용자 모드에서 커널 모드로 전환하고 OS 코드로 들어가는 표준화된 방법입니다.
+- 프로그램은 일반적으로 공유 라이브러리 함수를 호출하여 이러한 시스템 콜을 사용합니다. 이것들은 OS 커널로 제어를 전송하고 링을 전환하는 소프트웨어 인터럽트 또는 아키텍처별 시스템 콜 명령어에 대한 기계어를 래핑합니다. 커널은 작업을 수행하고 사용자 모드로 다시 전환하여 프로그램 코드로 돌아갑니다.
 
-Let’s figure out how to answer my first question from earlier:
+이전의 첫 번째 질문에 답하는 방법을 알아봅시다:
 
-> If the CPU doesn't keep track of more than one process and just executes instruction after instruction, why doesn't it get stuck inside whatever program it's running? How can multiple programs run at once?
+> CPU가 하나 이상의 프로세스를 추적하지 않고 명령어를 순차적으로 실행하기만 한다면, 실행 중인 프로그램 안에 갇히지 않는 이유는 무엇일까요? 어떻게 여러 프로그램이 동시에 실행될 수 있을까요?
 
-The answer to this, my dear friend, is also the answer to why Coldplay is so popular... clocks! (Well, technically timers. I just wanted to shoehorn that joke in.)
+이것에 대한 답은, 친애하는 친구여, Coldplay가 왜 그렇게 인기 있는지에 대한 답이기도 합니다... 시계! (음, 엄밀히 말하면 타이머입니다. 그냥 그 농담을 끼워 넣고 싶었습니다.)
